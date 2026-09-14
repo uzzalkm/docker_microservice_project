@@ -1,0 +1,169 @@
+D:\project\python_code\fastapi-project\app\main.py =>
+
+from fastapi import FastAPI
+from pydantic import BaseModel
+from fastapi.middleware.cors import CORSMiddleware  # for cors on react/angular
+from ariadne.asgi import GraphQL
+from app.graphql.schema import schema
+
+app = FastAPI()
+
+# Existing REST APIs
+# app.include_router(student_router)
+
+graphql = GraphQL(schema, debug=True)
+
+'''
+
+origins = [                   # for cors on react/angular
+    "http://localhost:3000",  # React
+    "http://localhost:4200",  # Angular
+    "http://127.0.0.1:5500",  # VS Code Live Server
+]
+
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=origins,
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
+
+users = [
+    {
+        "id":1,
+        "name":"John",
+        "city":"New York"
+    },
+    {
+        "id":2,
+        "name":"David",
+        "city":"London"
+    }
+]
+
+class Student(BaseModel):
+    id:int
+    name:str
+    department:str
+    
+    
+    
+@app.get("/")
+def home():
+    return {
+        "message": "Welcome to FastAPI REST API"
+    }
+    
+@app.get("/users")
+def get_users():
+    return users
+    
+@app.post("/student")
+def create_student(student:Student):
+
+    return {
+        "message":"Student Created",
+        "data":student
+    }
+'''
+
+app.mount("/graphql", graphql)
+
+D:\project\python_code\fastapi-project\app\database\oracle.py=>
+
+import oracledb
+
+connection = oracledb.connect(
+    user="omsystem",
+    password="12345",
+    dsn="192.168.66.21:1521/oms_pdb"
+)
+
+
+D:\project\python_code\fastapi-project\app\graphql\schema.graphql =>
+
+type Query {
+    student(id:Int!): Student
+}
+
+type Student {
+    id:Int!
+    name:String!
+    department:String!
+}
+
+
+
+D:\project\python_code\fastapi-project\app\graphql\schema.py =>
+
+from ariadne import make_executable_schema
+from ariadne import load_schema_from_path
+
+from app.graphql.resolvers.student import query
+
+type_defs = load_schema_from_path(
+    "app/graphql/schema.graphql"
+)
+
+schema = make_executable_schema(
+    type_defs,query
+)
+
+
+
+D:\project\python_code\fastapi-project\app\graphql\resolvers\student.py =>
+
+from ariadne import QueryType
+
+from app.services.student_service import find_student
+
+query = QueryType()
+
+@query.field("student")
+def resolve_student(_, info, id):
+    return find_student(id)
+    
+	
+D:\project\python_code\fastapi-project\app\repositories\student_repository.py =>
+
+from app.database.oracle import connection
+
+def get_student(student_id):
+    cursor = connection.cursor()
+
+    cursor.execute("""
+        SELECT
+            ID,
+            NAME,
+            DEPARTMENT
+        FROM STUDENT
+        WHERE ID = :id
+    """, {"id": student_id})
+
+    row = cursor.fetchone()
+
+    if row:
+        return {
+            "id": row[0],
+            "name": row[1],
+            "department": row[2]
+        }
+
+    return None
+	
+	
+D:\project\python_code\fastapi-project\app\services\student_service.py =>
+
+from app.repositories.student_repository import get_student
+
+
+#Both REST APIs and GraphQL should call this service, avoiding duplicated database logic.
+
+
+def find_student(student_id):
+    return get_student(student_id)
+
+
+
+

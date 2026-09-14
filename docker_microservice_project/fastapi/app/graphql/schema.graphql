@@ -1,0 +1,53 @@
+type Query {
+    customer(id:Long!): Customer
+	customers: [Customer]
+}
+
+scalar Long
+
+type Mutation {
+    createCustomer(
+        CUSTOMER_NAME:String!,
+        EMP_NAME:String!
+    ):Customer
+
+
+    updateCustomer(
+        id:Long!,
+        CUSTOMER_NAME:String!,
+        EMP_NAME:String!
+    ):Customer
+
+
+    deleteCustomer(
+        id:Long!
+    ):Boolean
+
+    # Production receives the order:
+    #  - updates ACCS_ORDER
+    #  - inserts ACCS_PUNIT_SCHEDULE_DATE
+    #  - inserts ACCS_ORDER_LOG
+    # erd_date / rerd_date must be sent as 'dd/mm/yyyy'
+    receiveOrderByProduction(
+        order_id: Long!,
+        current_sts_id: Long!,
+        user_id: Long!,
+        remarks: String,
+        have_issue: Int!,
+        erd_date: String!,
+        rerd_date: String!
+    ): OrderReceiveResponse!
+}
+
+type Customer {
+    id:Long!
+    CUSTOMER_NAME:String!
+    EMP_NAME:String!
+}
+
+type OrderReceiveResponse {
+    order_id: Long
+    status_id: Long
+    msg: String!
+    message: String
+}
