@@ -9,6 +9,7 @@ services:
     expose:
       - "8000"
 
+
   nginx:
     image: nginx:latest
     container_name: nginx_proxy
@@ -18,4 +19,30 @@ services:
     volumes:
       - ./nginx/nginx.conf:/etc/nginx/nginx.conf:ro
     depends_on:
+      - fastapi
+
+# ---------- PHP-FPM (runs the .php files) ----------
+  php:
+    image: php:7.4.19-fpm
+    container_name: php_fpm
+    restart: unless-stopped
+    volumes:
+      - ./nginx/project:/var/www/html
+    expose:
+      - "9000"
+
+# ---------- NEW nginx project on port 85 ----------
+
+  nginx_project:
+    image: nginx:latest
+    container_name: nginx_project
+    restart: unless-stopped
+    ports:
+      - "85:85"
+    volumes:
+      #- ./nginx/project:/usr/share/nginx/html:ro
+      - ./nginx/project:/var/www/html:ro
+      - ./nginx/project.conf:/etc/nginx/conf.d/default.conf:ro
+    depends_on:
+      - php
       - fastapi
